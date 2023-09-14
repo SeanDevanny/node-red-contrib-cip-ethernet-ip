@@ -161,15 +161,14 @@ module.exports = function (RED) {
         node.getStatus = () => status;
         node.getTag = t => tags.get(t);
         node.getTags = () => tags;
-        node.getAllTagValues = () => {
-            let res = {};
+        node.getAllTags = () => {
+            let res = [];
 
             if (plc.PLC) {
-            plc.PLC.forEach(tag => {
-                res[tag.mapping ? tag.mapping : tag.name] = tag.value;
-            });
+                plc.PLC.forEach(tag => {
+                    res.push(tag);
+                });
             }
-
             return res;
         };
 
@@ -201,8 +200,6 @@ module.exports = function (RED) {
             createTags();
             connected = true;
             manageStatus('online');
-            
-           
         }
 
 
@@ -255,6 +252,7 @@ module.exports = function (RED) {
 
     function EthIpIn(config) {
         const node = this;
+        let plc_unit = null;
         let statusVal, tag;
 
         RED.nodes.createNode(this, config);
@@ -263,34 +261,87 @@ module.exports = function (RED) {
         if (!node.endpoint) {
             return node.error(RED._("ethip.error.missingconfig"));
         }
+        if (config.readUnitFile) {
+            const fs = require('fs');
+            const filename = '/etc/default/plc_unit';
 
+            fs.readFile(filename, 'utf8', function (err, data) {
+                if (err) {
+                    return node.error(RED._("ethip.error.readerrorunitfile"));
+                }
+                plc_unit = data.replace(/\n$/, '').trim();
+
+                if (plc_unit === "" || !Tag.isValidTagname(plc_unit)) {
+                    // Should probably use a more suitable name check.
+                    // Just want to avoid SQL injection, which is (coincidentally) covered by above check
+                    return node.error(RED._("ethip.error.badunitname __name__", { name: plc_unit }));
+                }
+            });
+		
+        }
+
+        node.warn("PLC Unit is: " + plc_unit + "'");
         const tagName = config.program ? `Program:${config.program}.${config.variable}` : config.variable;
+
+        function collateTag(tag) {
+            let object = {
+                value: tag.value,
+                tag: tag.mapping || tag.name || ''
+            }
+
+            if (config.includeTimestamp) {
+                object.timestamp = tag.timestamp_raw.getTime()/1000;
+            }
+
+            return object;
+        }
 
         function onChanged(tag, lastValue) {
             let data = tag.value;
             let key = tag.mapping || tag.name || '';
-            let msg = {
-                payload: data,
-                topic: key,
-                lastValue: lastValue,
-                orig_topic: tag.name
-            };
+            let msg = {};
 
-            if (config.includeTimestamp) {
-                msg.timestamp = tag.timestamp_raw.getTime()/1000;
+            if (config.collateMetrics) {
+                msg.payload = collateTag(tag);
+                msg.payload.lastValue = lastValue;
+            } else {
+                msg = {
+                    payload: data,
+                    topic: key,
+                }
+                if (config.includeTimestamp) {
+                    msg.timestamp = tag.timestamp_raw.getTime()/1000;
+                }
+                msg.lastValue = lastValue;
             }
-
+            if (config.readUnitFile) {
+                msg.unit = plc_unit;
+            }
+ 
             node.send(msg);
             node.status(generateStatus(node.endpoint.getStatus(), config.mode === 'single' ? data : null));
         }
 
         function onChangedAllValues() {
-            let msg = {
-                payload: node.endpoint.getAllTagValues()
-            };
+            let payload = {};
+            let tags = node.endpoint.getAllTags();
+            let timestamps = {};
 
-            if (config.includeTimestamp) {
-                msg.timestamp = tag.timestamp_raw.getTime()/1000;
+            tags.forEach(tag => {
+                if (config.collateMetrics) {
+                    payload[tag.name] = collateTag(tag);
+                } else {
+                    payload[tag.mapping || tag.name] = tag.value;
+                    timestamps[tag.mapping || tag.name] = tag.timestamp_raw.getTime()/1000.0;
+                }
+            });
+
+            let msg = { payload: payload };
+            if (!config.collateMetrics && config.includeTimestamp) {
+                msg.timestamp = timestamps;
+            }
+            if (config.readUnitFile) {
+                msg.unit = plc_unit;
             }
 
             node.send(msg);

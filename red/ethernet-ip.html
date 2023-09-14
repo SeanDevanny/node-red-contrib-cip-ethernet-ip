@@ -93,7 +93,6 @@
                 <label style="width: 40%;" for="node-config-input-connectedMess"><i class="fa fa-exchange"></i> <span data-i18n="ethip.endpoint.label.connectedMess"></span></label>
                 <input type="checkbox" id="node-config-input-connectedMess" style="width: 20px; vertical-align: middle;">
             </div>
-
             <p><b>PLC Browser</b></p>
             <div class="form-row plc-list">
                 <ul id="node-config-browser-container"></ul>
@@ -550,7 +549,15 @@
         <input type="text" id="node-input-name" data-i18n="[placeholder]ethip.label.name">
     </div>
     <div class="form-row">
-        <label style="width: 40%;" for="node-input-includeTimestamp"><i class="fa fa-clock-o"></i> <span data-i18n="ethip.in.label.includeTimestamp"></span></label>
+        <label style="width: 60%;" for="node-input-collateMetrics"><i class="fa fa-file"></i> <span data-i18n="ethip.in.label.collateMetrics"></span></label>
+        <input type="checkbox" id="node-input-collateMetrics" style="width: 20px; vertical-align: middle;">
+    </div>
+    <div class="form-row">
+        <label style="width: 60%;" for="node-input-readUnitFile"><i class="fa fa-file"></i> <span data-i18n="ethip.in.label.readUnitFile"></span></label>
+        <input type="checkbox" id="node-input-readUnitFile" style="width: 20px; vertical-align: middle;">
+    </div>
+    <div class="form-row">
+        <label style="width: 60%;" for="node-input-includeTimestamp"><i class="fa fa-clock-o"></i> <span data-i18n="ethip.in.label.includeTimestamp"></span></label>
         <input type="checkbox" id="node-input-includeTimestamp" style="width: 20px; vertical-align: middle;">
     </div>
 </script>
@@ -579,9 +586,15 @@
                     name: {
                             value: ""
                         },
+                    collateMetrics: {
+                            value: false
+                        },
+                    readUnitFile: {
+                            value: false
+                        },
                     includeTimestamp: {
                             value: false
-                    }
+                        }
                 },
             color: "#D19BA1",
             inputs: 0,
@@ -688,7 +701,9 @@
                     var endpointNode = RED.nodes.node($("#node-input-endpoint").val());
                     var progValue = $('#node-input-program').val();
                     var varValue = $('#node-input-variable').val();
+                    var collateMetricsValue = $('#node-input-collateMetrics').val();
                     var includeTimestampValue = $('#node-input-includeTimestamp').val();
+                    var readUnitFileValue = $('#node-input-readUnitFile').val();
 
 
                     if(!endpointNode) return;
@@ -700,6 +715,8 @@
                         } else if (!endpointNode.vartable[progValue][varValue]) {
                                 this.variable = "";
                         }
+                    endpointNode.collateMetrics = collateMetricsValue;
+                    endpointNode.readUnitFile = readUnitFileValue;
                     endpointNode.includeTimestamp = includeTimestampValue;
                 }
         });

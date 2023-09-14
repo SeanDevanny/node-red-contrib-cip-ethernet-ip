@@ -5,6 +5,8 @@
                 "name": "eth-ip in",
                 "endpoint": "PLC",
                 "mode": "Mode",
+                "collateMetrics": "Group metric data",
+                "readUnitFile": "Read unit from /etc/default/plc_unit",
                 "includeTimestamp": "Include timestamp",
                 "program": "Scope",
                 "variable": "Tag",
@@ -75,6 +77,8 @@
             "onconnect": "Error connecting to PLC: ",
             "onerror": "Error communicating with the PLC: ",
             "missingconfig": "Missing configuration",
+            "readerrorunitfile": "Read error on unit name file",
+            "badunitname": "Illegal unit name provided",
             "noresponse": "No response from PLC, restarting communication",
             "invalidvar": "Variable [__varname__] not found"
         },
