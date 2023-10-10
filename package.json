@@ -5,6 +5,7 @@
     "main": "index.js",
     "dependencies": {
         "ethernet-ip": "^1.2.5",
+        "git": "^0.1.5",
         "st-ethernet-ip": "^2.6.7"
     },
     "repository": {
